@@ -1,10 +1,9 @@
 .equ VARIABLE_SIZE, 4
 
-# hello pookie bear
 .data
-    msgDegr: .asciz "Please enter the degree of the polynomial: "
-    msgCoef: .asciz "Please enter the polynomial coefficients separated by space. (e.g. for polynomial 3x^3 + 6x^2 - 4x + 8 enter '3 6 -4 8': "
-    msgX: .asciz "Please enter the x value: "
+    msgDegr: .asciz "Please enter the degree of the polynomial (no extra symbols): "
+    msgCoef: .asciz "Please enter the polynomial coefficients separated by space in ascending degree order (e.g. for polynomial 3x^3 + 6x^2 - 4x + 8 enter '8 -4 6 3'. Input must end in a number.): "
+    msgX: .asciz "Please enter the x value (no extra symbols): "
     array: .word 0
     x_value: .word 0
     size: .byte 0
@@ -78,6 +77,17 @@ main:
     la t3, buffer # load address of the buffer to t3
     add t6, zero, zero # reset value of t6 (will be used later,)
     
+    add t5, zero, zero
+    
+    lb t0, 0(t3)
+    li t2, 0x2D # load 0x2D to t2 (ASCII minus code)
+    
+    bne t0, t2, loop_parse_buffer
+    
+    addi t5, t5, 1
+    addi t3, t3, 1
+    addi a0, a0, -1
+    
     # loop for parsing the buffer    
     loop_parse_buffer:
         lb t0, 0(t3) # load one byte from t3 to t0
@@ -123,7 +133,7 @@ main:
             addi t3, t3, 1 # add one to t3 (to point to the next symbol)
             addi a0, a0, -1 # reduce the read bytes size by one
         
-            beq a0, zero, loop_completed # exit if all bytes in buffer read
+            blez a0, loop_completed # exit if all bytes in buffer read
         
             add t5, zero, zero # reset the flag
             lb t1, 0(t3) # load t3 byte to t1
@@ -155,28 +165,56 @@ main:
     li a2, 5 # load to a2 the maximum bytes to read
     ecall
     
-    la t0, buffer # load address of buffer to t0
-    lb t0, 0(t0)
+    add t6, zero, zero #reset the t6 (used later)
     
-    #x_value_parse_buffer:
-        #lb t6, 0(t0) # load the value from buffer (t0) to t0
+    la t3, buffer # load address of buffer to t0
     
-    ## STOPPED HERE: need to implement negative and two digits x-value
+    lb t0, 0(t3) # load byte from t3 to t1
+    li t2, 0x2D # load 0x2D to t2 (ASCII minus code)
     
-    li t2, 0x30 # load 0x30 to t2 (ASCII code for 0)
-    blt t0, t2, exit_loop
+    bne t0, t2, x_value_parse_buffer
+    
+    # if equal to minus, then handle minus sign
+    addi t5, t5, 1 # use t5 as a minus flag
+    
+    addi t3, t3, 1 # point to the next bit of buffer
+    addi a0, a0, -1 # reduce bytes read size
+    
+    beq a0, zero, exit_loop
+    x_value_parse_buffer:
+        lb t0, 0(t3) # load the value from buffer (t3) to t0    
         
-    li t2, 0x40 # load 0x39 to t2 (ASCII code for 9)
-    blt t2, t0, exit_loop
+        addi t2, zero, 0x0A # load 0xA to t2 (ASCII enter code)
+        beq t0, t2, write_num_to_x_value # see if the symbol in t0 is enter (if so, jump to further)
+        
+        li t2, 0x30 # load 0x30 to t2 (ASCII code for 0)
+        blt t0, t2, exit_loop # if its below 0x30, jump to exit
+        
+        li t2, 0x39 # load 0x39 to t2 (ASCII code for 9)
+        blt t2, t0, exit_loop # if its below 0x30, jump to exit
+        
+        addi t0, t0, -0x30 # subtract zero from t0 (to store a decimal value)
+        
+        li t2, 0xA # load 0xA to t2
+        mul t6, t6, t2 # multiply t6 by t2 (10)
+        add t6, t0, t6 # add t6 to t0 and store in t6
     
-    addi t0, t0, -0x30 # subtract '0' to make decimal
-    
-    la t1, x_value # load address of size to t1
-    sw t0, 0(t1) # store byte of t0 (input) to t1
-    
-    
-    
-    
+    x_value_continue_loop:
+        addi t3, t3, 1 # point to next symbol in the buffer
+        addi a0, a0, -1 # reduce the bytes read size
+        bne a0, zero, x_value_parse_buffer # compare if bytes read is not 0
+        
+    write_num_to_x_value:
+        beq t5, zero, no_minus # check if the minus flag (t5) is set
+        
+        add t1, zero, zero # make t1 contain value -1
+        addi t1, t1, -1
+        mul t6, t6, t1 # multiply t6 reg (with result) by -1 (in t1)
+        
+        no_minus:
+            la t1, x_value # load the address of x_value to t1
+            sw t6, 0(t1) # store the result (t6) in address t1 (x_value)
+        
     la a0, array # load array address to a0 register
     lw a0, 0(a0)
     
@@ -186,7 +224,7 @@ main:
     la t1, x_value # temporary store x_value address in t1 register
     lb a2, 0(t1) # load x_value to a2 register
     
-    jal ra, print # save the return address to ran and jump to label print
+    jal ra, horners # save the return address to ran and jump to label print
     
     # good practice to clean up the stack
     
@@ -194,14 +232,14 @@ main:
     li a7, 10
     ecall 
     
-print:
+horners:
     add a3, a0, x0 # save a0 contents to a3 (in this case the address of the array)
     lw t0, 0(a3) # set the result to the first coefficient
     
     addi a3, a3, VARIABLE_SIZE # access the second element of the array
     addi a1, a1, -1 # decrement the size
-
-
+    
+    beq a1, x0, end
     loop:
         lw a4, 0(a3) # store the next element of the array in a4
         
@@ -212,11 +250,12 @@ print:
         
         addi a1, a1, -1 # decrement the size
         bne a1, x0, loop # check if size is not zero
-        
-    add a0, t0, x0  # add the value of result in t0 to a0 for printing
-    li a7, 1 # print an int (sys call provided by ripes)
-    ecall 
-    ret
+   
+    end: 
+        add a0, t0, x0  # add the value of result in t0 to a0 for printing
+        li a7, 1 # print an int (sys call provided by ripes)
+        ecall 
+        ret
     
  exit_loop:
    # exit
