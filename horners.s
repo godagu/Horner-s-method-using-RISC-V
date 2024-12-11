@@ -22,26 +22,52 @@ main:
     li a7, 4 #system call for printing string
     ecall
     
-    # read from input the degree of polynomial
+    # read from input the degree of polynomial (max two digit number!)
     li a7, 63 # system call to read
     add a0, zero, zero # 0 for reading from stdin
     la a1, buffer # load to a1 the address of the buffer
-    li a2, 2 # load to a2 the maximum bytes to read (enter included)
+    li a2, 3 # load to a2 the maximum bytes to read (enter included)
     ecall
     
-    la t0, buffer # load address of buffer to t0
-    lb t0, 0(t0) # load the value from buffer (t0) to t0
+    la t3, buffer # load address of buffer to t0
+    add t6, zero, zero # reset the value of t6
     
-    addi t0, t0, -0x2F # subtract '0' + 1 to make decimal and add one
+    degree_parse_loop:
+        lb t0, 0(t3) # load the value from buffer (t0) to t0
+                
+        addi t2, zero, 0x0A # load 0xA to t2 (ASCII enter code)
+        beq t0, t2, write_num_to_degree # see if the symbol in t0 is enter (if so, jump to further)
+        
+        li t2, 0x30 # load 0x30 to t2 (ASCII code for 0)
+        blt t0, t2, exit_loop # if its below 0x30, jump to exit
+        
+        li t2, 0x39 # load 0x39 to t2 (ASCII code for 9)
+        blt t2, t0, exit_loop # if its below 0x30, jump to exit
+     
+        addi t0, t0, -0x30 #subtract 0x30 to store decimal value
+        
+        li t2, 0xA # load 0xA (10) to t2
+        mul t6, t6, t2 # multiply t6 by t2 (10)
+        add t6, t0, t6 # add t6 to t0 and store in t6
+        
+    continute_loop_deg:
+        addi t3, t3, 1 # point to the next symbol in the buffer
+        addi a0, a0, 1 # reduce the bytes read 
+        
+        bne a0, zero, degree_parse_loop # check if all bytes where read (compare a0 to zero)
+        
+    write_num_to_degree:
+        addi t6, t6, 1 # add 1 to t6 to (because for numb. 2 polynomial there should be 3 coefficients)
+        la t1, size
+        sb t6, 0(t1)
+        
     
-    la t1, size # load address of size to t1
-    sb t0, 0(t1) # store byte of t0 (input) to t1
-    
+    # input the coefficients
+
     la a0, msgCoef #load symbol address to a0
     li a7, 4 # system call for printing string
     ecall
     
-    # input the coefficients
     li a7, 63 # system call to read 
     add a0, zero, zero # 0 foor reading from stdin
     la a1, buffer # load buffer of the address to a1
@@ -60,7 +86,7 @@ main:
         beq t0, t2, write_num_to_array # compare if the symbol in t0 is space, if yes jump to label for writing numbers to array
         
         addi t2, zero, 0x0A # load 0xA to t2 (ASCII enter code)
-        beq t0, t2, write_num_to_array # see if the symbol in t0 is minus (if so, jump to further)
+        beq t0, t2, write_num_to_array # see if the symbol in t0 is enter (if so, jump to further)
         
         li t2, 0x30 # load 0x30 to t2 (ASCII code for 0)
         blt t0, t2, exit_loop # if its below 0x30, jump to exit
@@ -79,7 +105,6 @@ main:
         addi a0, a0, -1 # reduce the a1 by one (holds the number of bytes read)
         
         bne a0, zero, loop_parse_buffer # if read bytes sizev (a0) is bigger than 0, continue parsing
-        
         
     write_num_to_array:
         addi sp, sp, -VARIABLE_SIZE # subtract the variable size from the stack pointer (to)
@@ -123,26 +148,33 @@ main:
     li a7, 4 #system call for printing string
     ecall
     
-    # read from input the degree of polynomial
+    # read from input the x value (positive or negative three digit number)
     li a7, 63 # system call to read
     li a0, 0 # 0 for reading from stdin
     la a1, buffer # load to a1 the address of the buffer
-    li a2, 2 # load to a2 the maximum bytes to read
+    li a2, 5 # load to a2 the maximum bytes to read
     ecall
     
     la t0, buffer # load address of buffer to t0
-    lb t0, 0(t0) # load the value from buffer (t0) to t0
+    lb t0, 0(t0)
     
-    li t2, 0x30
+    #x_value_parse_buffer:
+        #lb t6, 0(t0) # load the value from buffer (t0) to t0
+    
+    ## STOPPED HERE: need to implement negative and two digits x-value
+    
+    li t2, 0x30 # load 0x30 to t2 (ASCII code for 0)
     blt t0, t2, exit_loop
         
-    li t2, 0x40
+    li t2, 0x40 # load 0x39 to t2 (ASCII code for 9)
     blt t2, t0, exit_loop
     
-        addi t0, t0, -0x30 # subtract '0' to make decimal
+    addi t0, t0, -0x30 # subtract '0' to make decimal
     
     la t1, x_value # load address of size to t1
     sw t0, 0(t1) # store byte of t0 (input) to t1
+    
+    
     
     
     la a0, array # load array address to a0 register
