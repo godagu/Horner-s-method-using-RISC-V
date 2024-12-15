@@ -1,5 +1,12 @@
-.equ VARIABLE_SIZE, 4                       # declare a constant variable size as integer
+# Author: Goda Gutparakyte
+# About: this is a program, that evaluates an n-degree polynomial using Horner's method
+# Input: once the program is ran, the user will be asked to enter a polynomial degree (a positive up to two digits integer), then an array of coeffcients separated by one space (in degree ascending order) 
+# and lastly the user will be prompted to enter an x-value (max 4 digit negative or positive integer). After that, the result will be printed to STDOUT.
+# NOTE: no other input characters are allowed.
+# Last edited: 2024-12-16
 
+.equ VARIABLE_SIZE, 4                       # declare a constant variable size as integer
+    
 .data                                       # start of the data section where static variables and strings are declared.
 
     msgDegr: .asciz "Please enter the degree of the polynomial (no extra symbols): "
