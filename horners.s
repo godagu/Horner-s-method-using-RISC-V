@@ -37,11 +37,11 @@ main:
     li a2, 3                                # load to a2 the maximum bytes to read (enter included)
     ecall
     
-    la t3, buffer                           # load address of buffer to t0
+    la t3, buffer                           # load address of buffer to t3
     add t6, zero, zero                      # reset the value of t6
     
     degree_parse_loop:
-        lb t0, 0(t3)                        # load the value from buffer (t0) to t0
+        lb t0, 0(t3)                        # load one byte from the buffer (in t3) to t0
                 
         addi t2, zero, 0x0A                 # load 0xA to t2 (ASCII enter code)
         beq t0, t2, write_num_to_degree     # see if the symbol in t0 is enter (if so, jump to further)
@@ -237,7 +237,10 @@ main:
     # exit
     li a7, 10                               # system call to end a program
     ecall 
-    
+
+# Arguments: a0 - address of the array of coefficients, a1 - size, a2 - x value 
+# Return value: a0 - the evaluation result. 
+# C function declaration: int horners(int array[], int size, int x_value)
 horners:
     add a3, a0, x0                          # save a0 contents to a3 (in this case the address of the array)
     lw t0, 0(a3)                            # set the result to the first coefficient
