@@ -1,4 +1,4 @@
-This project consists of RISC-V assembly program. Below is the detailed setup for running the program and the tools used for testing.
+This project consists of RISC-V assembly program for evaluating polynomials with Horner's scheme. Below is the detailed setup for running the program and the tools used for testing.
 
 ## System Information
 
